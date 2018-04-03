@@ -2,6 +2,9 @@
 
 various plugins for [Munin](http://munin-monitoring.org/)
 
+## Featured Plugins
+- **iot-json_** : Virtual _Wildcard_ Plugin to fetch data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
+
 
 ## Installation Instructions (for Ubuntu/Debian)
 - ```apt-get install munin-node```
