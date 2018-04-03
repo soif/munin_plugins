@@ -1,0 +1,237 @@
+#!/usr/bin/perl -w
+# -*- perl -*-
+
+use strict;
+use File::Basename;
+use File::stat;
+use LWP::Simple;
+
+### HELP #################################################################################
+=begin help
+	--- WILDCARD NAMING -------------
+	Link to this file with a symlink named as : iot_json_HOST_FIRMWARE_TYPE
+	Currently supported TYPES are:
+		- free		: Free RAM
+		- load		: CPU Load
+		- rssi		: Wifi strength
+		- uptime	: Uptime in minutes
+
+	if an unknown type is used, it will be used as the JSON key to extract.
+	ie if you want to extract a JSON field named "Temp", use "Temp" as type, and optionally 
+	change the following env.xxx to better describe/draw it
+
+	--- ENV SETTINGS -------------
+	You can add the following "env.xx" inside the [iot_json_HOST_FIRMWARE_TYPE] definitions in /etc/munin/plugins.d/*.conf
+		- url			: use a dedicated url per host type (ie for espurna , be sure to end it with ?apikey=)
+		- json_key		: use a JSON key different from an unknown TYPE (ie if there is a space in the key) 
+		- graph_title	: munin graph_title
+		- graph_vlabel	: munin graph_vlabel
+		- graph_category: munin graph_category
+		- graph_scale	: munin graph_scale
+		- graph_args	: munin graph_args
+		- graph_info	: munin graph_info
+		- TYPE.label	: munin line label (where TYPE is the TYPE used in the plugin name)
+		- TYPE.info		: munin line info (where TYPE is the TYPE used in the plugin name)
+		- api_key		: (espurna only) API Key
+
+	Tips on How to Configure, Troubleshoot :
+	https://wiki.mikrotik.com/wiki/Munin_Monitoring	
+=cut
+
+
+#### parse filename ######################################################################
+my $script_name = basename($0);
+my ($base, $fqdn, $firm, $type)=split(/_/, $script_name);
+#print "$script_name : $base, $type, $firm, $fqdn \n";
+
+
+#### Settings ############################################################################
+my %urls =(
+	"espeasy" => '/json',
+	"espurna" => '/apis?apikey=',
+	"tasmota" => '',
+);
+
+# JSON per firmware : type = key ---------------------------------------------------------------
+my %json_keys;
+$json_keys{'espeasy'}{'free'}	='Free RAM';
+$json_keys{'espeasy'}{'load'}	='Load';
+$json_keys{'espeasy'}{'loadlc'}	='Load LC';
+$json_keys{'espeasy'}{'rssi'}	='RSSI';
+$json_keys{'espeasy'}{'uptime'}	='Uptime';
+
+
+# CONFIG type param = value --------------------------------------------------------------
+my %config;
+
+# free ----------
+$config{'free'}{'graph_title'}		="Free RAM";
+$config{'free'}{'graph_vlabel'}		="octets";
+$config{'free'}{'graph_category'}	="memory";
+$config{'free'}{'graph_args'}		="--base 1024";
+#$config{'free'}{'graph_scale'}		="no";
+$config{'free'}{'free.label'}		="free";
+
+# load ----------
+$config{'load'}{'graph_title'}		="CPU Load";
+$config{'load'}{'graph_vlabel'}		="percent load";
+$config{'load'}{'graph_category'}	="cpu";
+$config{'load'}{'graph_args'}		="--base 1000 -l 0 -u 100";
+$config{'load'}{'graph_scale'}		="no";
+$config{'load'}{'load.label'}		="load";
+
+# loadlc ----------
+$config{'loadlc'}{'graph_title'}	="LC CPU Load";
+$config{'loadlc'}{'graph_vlabel'}	="LC load";
+$config{'loadlc'}{'graph_category'}	="cpu";
+$config{'loadlc'}{'graph_args'}		="--base 1000 ";
+$config{'loadlc'}{'graph_scale'}	="no";
+$config{'loadlc'}{'loadlc.label'}	="load";
+
+# rssi ----------
+$config{'rssi'}{'graph_title'}		="Wifi RSSI";
+$config{'rssi'}{'graph_vlabel'}		="strength";
+$config{'rssi'}{'graph_category'}	="radio";
+#$config{'rssi'}{'graph_scale'}		="no";
+#$config{'rssi'}{'graph_args'}		="--base 1000";
+$config{'rssi'}{'graph_info'}		="Received Signal Strength Indication";
+$config{'rssi'}{'rssi.label'}		="strength";
+
+
+# uptime ----------
+$config{'uptime'}{'graph_title'}	="Uptime";
+$config{'uptime'}{'graph_vlabel'}	="uptime in minutes";
+$config{'uptime'}{'graph_category'}	="system";
+$config{'uptime'}{'graph_scale'}	="no";
+$config{'uptime'}{'graph_args'}		="--base 1000 -l 0";
+#$config{'uptime'}{'graph_info'}	="Uptime in minutes";
+#$config{'uptime'}{'uptime.info'}	="uptime";
+$config{'uptime'}{'uptime.label'}	="uptime";
+$config{'uptime'}{'uptime.draw'}	="AREA";
+
+
+### Functions ############################################################################
+sub fetch_value_from_cached_json {
+	my $param = shift;
+	my $file="/tmp/munin_iot_${firm}_${fqdn}.json";
+
+	# deleted cache file if too old ---------
+	if(-e $file){
+		#my $filetime=(stat($file))[9];
+		my $filetime=(stat($file))->mtime;
+		my $offset = time - $filetime;
+		#print "$offset\n";
+		if( $offset  > 250 ) {
+			unlink $file;
+  		}
+	}
+
+	# get json from cache or url ------------------
+	my $json='';
+	if(-e $file){
+		open FILE, $file or die "Couldn't open file '$file' : $!";
+		$json = join("", <FILE>);
+		close FILE;
+  	}
+	else{
+		my $url = "http://${fqdn}$urls{$firm}";
+		$json = get($url);
+		if($json ne ""){
+			open(my $fh, '>', $file) or die "Could not open file '$file' $!";
+			print $fh $json;
+			close $fh;
+		}
+	}
+
+	# parse JSON ------------------
+	if($json ne ""){
+		my $re='"'. $param.'":"?(.*?)[",}\n]+';
+		#print "$re : \n";
+		if ($json =~ m/$re/ ){
+			my $value =trim($1);
+			print "$type.value $value\n";
+			exit 0;
+		}
+	}
+}
+
+### trim ###########
+sub trim { 
+	my $s = shift; 
+	$s =~ s/^\s+|\s+$//g; 
+	return $s ;
+}
+### ucwords ########
+sub ucwords{
+   my $str = shift;
+   $str = lc($str);
+   $str =~ s/\b(\w)/\u$1/g;
+   return $str;
+ }
+
+### setConfig (name, default_val) ########
+sub setConfigFromEnvOrDefault{ 
+	my $name 	= shift;
+	my $default = shift;
+
+	if(defined $ENV{$name}){
+		$config{$type}{$name}=$ENV{$name};	
+	}
+	elsif(!defined $config{$type}{$name} && defined $default){
+		$config{$type}{$name}=$default;
+	}
+}
+
+##########################################################################################
+### MAIN #################################################################################
+##########################################################################################
+
+# Set Defaults ------------------------
+setConfigFromEnvOrDefault('graph_title',	ucwords($type));
+setConfigFromEnvOrDefault('graph_vlabel',	'raw value');
+setConfigFromEnvOrDefault('graph_category',	'sensors');
+setConfigFromEnvOrDefault('graph_scale',	'no');
+setConfigFromEnvOrDefault('graph_args'		);
+setConfigFromEnvOrDefault('graph_info'		);
+setConfigFromEnvOrDefault("$type.label",	$type);
+setConfigFromEnvOrDefault("$type.info");
+
+my $json_key; #------------------------
+if(defined $ENV{'json_key'}){
+	$json_key=$ENV{'json_key'};	
+}
+elsif(defined $json_keys{$firm}{$type}){
+	$json_key=$json_keys{$firm}{$type};	
+}
+else{
+	$json_key=$type;	
+}
+
+# url ---------------------------------
+if(defined $ENV{'url'}){
+	$urls{$firm}=$ENV{'url'};	
+}
+if($firm eq 'espurna'){
+	$urls{'espurna'} .=$ENV{'api_key'} 
+}
+
+
+
+### autoconf ###########################################
+if ( defined $ARGV[0] && $ARGV[0] eq 'autoconf' ) {
+	print "yes\n";
+	exit 0;
+}
+
+### config #############################################
+if ( defined $ARGV[0] && $ARGV[0] eq 'config' ) {
+	print "host_name $fqdn\n";
+	foreach my $k (keys %{ $config{$type} }) {
+		print "$k $config{$type}{$k}\n";
+	}
+	exit 0;
+}
+
+### main (value) #######################################
+fetch_value_from_cached_json($json_key);
+exit 1;

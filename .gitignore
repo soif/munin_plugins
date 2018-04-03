@@ -1,0 +1,21 @@
+# OS generated files #######################
+
+# MacOSX  ——————————————
+.DS_Store
+Icon?
+
+# Linux ———————————-————
+.AppleDouble
+.afpDeleted*
+
+# Fuse FileSystem ——————
+.fuse_hidden*
+
+
+# ignored dirs #############################
+
+
+# ignored files ############################
+!.gitkeep
+__*
+
