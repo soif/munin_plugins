@@ -18,29 +18,29 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 
 ## Wilcard Naming
 Link to this file with a symlink named as : ```iot-json_HOSTNAME_FIRMWARE_TYPE``` Where 
-- HOSTANE is the Host Name or IP address.
-- FIRMWARE is either ```espeasy``` or ```espurna```
-- TYPE is 
-	either one of the supported TYPES:
-	- free		: Free RAM
-	- load		: CPU Load
-	- rssi		: Wifi strength
-	- uptime	: Uptime in minutes
+- **HOSTNAME** is the Host Name or IP address.
+- **FIRMWARE** is either ```espeasy``` or ```espurna```
+- **TYPE** is 
+	Either one of the supported TYPES:
+	- **free**		: Free RAM
+	- **load**		: CPU Load
+	- **rssi**		: Wifi strength
+	- **uptime**	: Uptime in minutes
 	either a custom TYPE, that will be the name of the JSON key to extract. 
 	_ie if you want to extract a JSON field named "Temp", use "Temp" as TYPE, and optionally change the following env.xxx to better describe/draw it_
 
 example: ```iot-json_192.168.0.1_espeasy_uptime```
 
 ## ENV Settings
-You can add the following "env.xx" inside the ```[iot-json_HOSTNAME_FIRMWARE_TYPE]``` definitions in /etc/munin/plugins.d/*.conf
-- url			: use another API url  (ie for Espurna , be sure to end it with ?apikey=)
-- api_key		: (espurna only) API Key
-- json_key		: use a JSON key different than the custom TYPE set in the name (ie useful if there is a space in the key) 
-- graph_title	: munin graph_title
-- graph_vlabel	: munin graph_vlabel
-- graph_category: munin graph_category
-- graph_scale	: munin graph_scale
-- graph_args	: munin graph_args
-- graph_info	: munin graph_info
-- TYPE.label	: munin line label (where TYPE is the TYPE used in the plugin name)
-- TYPE.info		: munin line info (where TYPE is the TYPE used in the plugin name)
+You can add the following "env.xx" inside the ```[iot-json_HOSTNAME_FIRMWARE_TYPE]``` definitions in ```/etc/munin/plugins.d/*.conf```
+- **url**			: use another API url  (ie for Espurna , be sure to end it with ?apikey=)
+- **api_key**		: (espurna only) API Key
+- **json_key**		: use a JSON key different than the custom TYPE set in the name (ie useful if there is a space in the key) 
+- **graph_title**	: munin graph_title
+- **graph_vlabel**	: munin graph_vlabel
+- **graph_category**: munin graph_category
+- **graph_scale**	: munin graph_scale
+- **graph_args**	: munin graph_args
+- **graph_info**	: munin graph_info
+- **TYPE.label**	: munin line label (where TYPE is the TYPE used in the plugin name)
+- **TYPE.info**		: munin line info (where TYPE is the TYPE used in the plugin name)
