@@ -26,6 +26,7 @@ Link to this file with a symlink named as : ```iot-json_HOSTNAME_FIRMWARE_TYPE``
 	- **load**		: CPU Load
 	- **rssi**		: Wifi strength
 	- **uptime**	: Uptime in minutes
+	
 	either a custom TYPE, that will be the name of the JSON key to extract. 
 	_ie if you want to extract a JSON field named "Temp", use "Temp" as TYPE, and optionally change the following env.xxx to better describe/draw it_
 
