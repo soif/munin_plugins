@@ -1,8 +1,8 @@
 # Munin Plugins
 
-various plugins for [Munin](http://munin-monitoring.org/)
+Various plugins for [Munin](http://munin-monitoring.org/)
 
-## Featured Plugins
+### Featured Plugins
 - **[exim_rbls](exim_rbls/)** : Plugin to graph Exim emails rejected by each RBLs
 - **[fail2ban](fail2ban/)** : Latest version of the fail2ban plugin to monitor Fail2ban jails
 - **[iot-json_](iot-json_/)** : Virtual _Wildcard_ Plugin to graph data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
@@ -10,17 +10,17 @@ various plugins for [Munin](http://munin-monitoring.org/)
 - **[webtime_](webtime_/)** : Virtual _Wildcard_ Plugin to graph HTTP response time of a specific page
 
 
-## Installation Instructions (for Ubuntu/Debian)
+### Installation Instructions (for Ubuntu/Debian)
 - ```apt-get install munin-node```
-- Copy each plugins into /usr/share/munin/plugins/
+- Copy each plugins into ```/usr/share/munin/plugins/```
 
 
-## Contribute!
+### Contribute!
 
 Whether you are a developer or a regular user, [your help is most welcome](.github/CONTRIBUTING.md)!
 
 
-## Licence
+### Licence
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
