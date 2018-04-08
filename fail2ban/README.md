@@ -2,8 +2,8 @@
 
 Latest version of the fail2ban plugin to monitor bans on Fail2ban jails
 
-** Original Author: Thomas Leveil **
+*Original Author: Thomas Leveil*
 
-## Installation
+### Installation
 - Copy ```fail2ban``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
 - Then symlink it from the ```/etc/munin/plugins/``` folder
