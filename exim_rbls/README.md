@@ -1,6 +1,8 @@
 # exim_rbls
 
-Graph count of emails rejected by each RBLs configured in Exim
+Graph count of emails rejected by each RBLs configured in Exim.
+
+** (The included Perl shebang is directly compatible with latest Centos-Cpanel versions )**
 
 ## Installation
 - Copy ```exim_rbls``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
