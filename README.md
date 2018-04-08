@@ -3,6 +3,7 @@
 various plugins for [Munin](http://munin-monitoring.org/)
 
 ## Featured Plugins
+- **[exim_rbls](exim_rbls/)** : Plugin to graph Exim emails rejected by each RBLs
 - **[iot-json_](iot-json_/)** : Virtual _Wildcard_ Plugin to graph data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
 - **[webtime_](webtime_/)** : Virtual _Wildcard_ Plugin to graph HTTP response time of a specific page
 
