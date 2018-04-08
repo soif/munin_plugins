@@ -21,8 +21,7 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 Link to this file with a symlink named as : ```iot-json_HOSTNAME_FIRMWARE_TYPE``` Where 
 - **HOSTNAME** is the Host Name or IP address.
 - **FIRMWARE** is either ```espeasy``` or ```espurna```
-- **TYPE** is 
-	Either one of the supported TYPES:
+- **TYPE** is one of the supported TYPES:
 	- **free**		: Free RAM
 	- **load**		: CPU Load
 	- **rssi**		: Wifi strength
