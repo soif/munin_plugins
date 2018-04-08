@@ -1,0 +1,8 @@
+#!/usr/bin/php
+<?php
+require_once('/etc/munin/oscam_conf.php');
+require_once(dirname(__FILE__).'/oscam_class.php');
+//#################################################################
+$osc = new OSCam;
+$osc->muninPlugin('clients-idle');
+?>
