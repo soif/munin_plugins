@@ -8,10 +8,10 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 ### Installation
 - Copy ```iot-json_``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
 - Then symlink it from the ```/etc/munin/plugins/``` folder, carefully naming it as described below
-- Update the ```/etc/munin/munin.conf```adding your node hostname or IP as the name (between brackets), and set the address parameter to the IP of the node where iot-json_ is installed. Example, if the node is on the same host as the server :
+- Update the ```/etc/munin/munin.conf``` adding your node hostname or IP between brackets, and set the address parameter to the IP of the node where iot-json_ is installed. Example, if the node is on the same host as the server :
 
 ```
-# address or name of the ESP device (must be the SAME as the name defined in the symlink name)
+# address or name of the ESP device (must be the same as the HOSTNAME defined in the symlink name)
 [192.168.0.1]
       address 127.0.0.1
       # this the address of the NODE containing the symlink to iot-json_

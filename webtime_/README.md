@@ -8,10 +8,10 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 ### Installation
 - Copy ```webtime_``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
 - Then symlink it from the ```/etc/munin/plugins/``` folder, carefully naming it as described below
-- Update the ```/etc/munin/munin.conf```adding your node hostname as the name (between brackets), and set the address parameter to the IP of the node where webtime_ is installed. Example, if the node is on the same host as the server :
+- Update the ```/etc/munin/munin.conf``` adding your node hostname between brackets, and set the address parameter to the IP of the node where webtime_ is installed. Example, if the node is on the same host as the server :
 
 ```
-# hostname fetched by the node (must be the SAME as the name defined in the symlink name)
+# hostname fetched by the node (must be the SAME as the HOSTNAME defined in the symlink name)
 [www.apple.com]
       address 127.0.0.1
       # this the address of the NODE containing the symlink to webtime_
