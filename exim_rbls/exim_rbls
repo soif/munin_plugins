@@ -1,11 +1,11 @@
 #!/usr/local/cpanel/3rdparty/perl/522/bin/perl
-######!/usr/local/cpanel/3rdparty/perl/514/bin/perl -w
 ######!/usr/bin/perl
 
 # Description 
 #	Plugin to monitor mails rejected by exim RBLs.
 #
-# 2015/06/11 v0.1 - Initial Release  - by Francois Dechery , www.440net.net
+# 2015/06/11 v0.1 - Initial Release 
+# by Francois Dechery , https://github.com/soif/munin_plugins
 #
 # Based on exim_mailstats munin plugin
 # 	Thanks to its original authors : Torstein Svendsen, Henrik Grindal Bakken, Jimmy Olsen, Nicolai Langfeldt and others
@@ -26,12 +26,12 @@
 #%# capabilities=autoconf
 #
 
-
 use strict;
 use lib $ENV{'MUNIN_LIBDIR'};
 use Munin::Plugin;
 
-## Variables ######################################
+
+## Variables #############################################################################
 my @rbls_counts	= undef;
 my @rbls_names	=('www.barracudanetworks.com','www.spamhaus.org','www.spamcop.net');
 
@@ -47,7 +47,7 @@ my $LOGDIR  = $ENV{'logdir'}  || undef;
 my $LOGNAME = $ENV{'logname'} || '';
 
 
-################################################
+##########################################################################################
 sub get_exim_logfile {
     my ($spec, $type, $time) = @_;
     chomp($spec);
@@ -68,7 +68,8 @@ sub get_exim_logfile {
     return;
 }
 
-################################################
+
+##########################################################################################
 sub parseEximfile {	 
 
     my ($fname, $start) = @_;
@@ -96,7 +97,8 @@ sub parseEximfile {
     return tail_close($LOGFILE);
 }
 
-#######################################
+
+##########################################################################################
 sub set_all_counters($){
     my ($val) = @_;
 	my $n=0;
@@ -107,7 +109,7 @@ sub set_all_counters($){
 }
 
 
-## Autoconf ######################################
+## Autoconf ##############################################################################
 my $logfile;
 
 if ($ARGV[0] and $ARGV[0] eq "autoconf" ){
@@ -150,7 +152,8 @@ if ($ARGV[0] and $ARGV[0] eq "autoconf" ){
 	exit 0;
 }
 
-###################################################
+
+##########################################################################################
 my $logfilespec;
 
 if (defined($LOGDIR)) {
@@ -165,7 +168,7 @@ else {
 die "Logfile '$logfile' is not readable\n" unless -r $logfile;
 
 
-## Config ######################################
+## Config #################################################################################
 
 if ( $ARGV[0] and $ARGV[0] eq "config" ) {
 
@@ -189,7 +192,7 @@ if ( $ARGV[0] and $ARGV[0] eq "config" ) {
 }
 
 
-## MAIN ######################################
+## MAIN ##################################################################################
 
 my @last_state = restore_state();
 my $pos;
@@ -205,8 +208,6 @@ else {
     shift @rbls_counts;
     $pos = parseEximfile($logfile, $last_state[0]);
 }
-
-
 
 # print values -------------
 my $n=0;
