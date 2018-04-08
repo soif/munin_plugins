@@ -11,16 +11,16 @@ http-loadtime_ - Plugin to graph HTTP response time of a specific page
 
 This is a virtual node plugin that should be linked as 
 
-"http-loadtime_HOST_NAME" where
- - HOST is the host to be fetched   as well as the node host_name
- - NAME is the name of the Graph (carret are replaced by spaces in the graph)
+"webtime_HOSTNAME_PAGENAME" where
+ - HOSTNAME is the host to be fetched   as well as the node host_name
+ - PAGENAME is the name of the Graph (carets are replaced by spaces in the graph)
 
 The following environment variables are used by this plugin
 
  - url   : URL to add at the end of the hostname (default: "/")
  - name  : an alternate Name if the $NAME in the symlink can not be escaped corretly (ie if you need  slashes) 
  - scheme: (default: "http://")
- - agent: The user agent to use (default: "Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) http-loadtime_/1.0")
+ - agent : The user agent to use (default: "Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) webtime_/1.0")
 
 =head1 AUTHOR
 
@@ -47,7 +47,7 @@ URL=${url:-"/"}
 NAME=${name:-"$L_NAME"}
 HOST=${host:-"$L_HOST"}
 SCHEME=${scheme:-"http://"}
-AGENT=${agent:-"Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) http-loadtime_/1.0"}
+AGENT=${agent:-"Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) webtime_/1.0"}
 
 FULL_URL="$SCHEME$HOST$URL"
 NAME=${NAME//-/ } ## bug if sh (dash)
@@ -81,10 +81,9 @@ if [ "$1" = "config" ]; then
 fi
 
 TMPDIR=`mktemp -d` || exit 1
-
 trap "rm -rf $TMPDIR" EXIT
-
 cd $TMPDIR || exit 1
+
 loadtime=$($time_bin -p $wget_bin -pH -T 20  --no-cache --no-proxy --delete-after -U "User-Agent: $AGENT" $FULL_URL -q 2>&1 | awk '/^real / { print $2 }')
 
 cd ..
