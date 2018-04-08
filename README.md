@@ -3,8 +3,8 @@
 various plugins for [Munin](http://munin-monitoring.org/)
 
 ## Featured Plugins
-- **iot-json_** : Virtual _Wildcard_ Plugin to graph data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
-- **webtime_** : Virtual _Wildcard_ Plugin to graph HTTP response time of a specific page
+- **[iot-json_](iot-json_/)** : Virtual _Wildcard_ Plugin to graph data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
+- **[webtime_](webtime_/)** : Virtual _Wildcard_ Plugin to graph HTTP response time of a specific page
 
 
 ## Installation Instructions (for Ubuntu/Debian)
