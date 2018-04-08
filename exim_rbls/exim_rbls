@@ -1,0 +1,229 @@
+#!/usr/local/cpanel/3rdparty/perl/522/bin/perl
+######!/usr/local/cpanel/3rdparty/perl/514/bin/perl -w
+######!/usr/bin/perl
+
+# Description 
+#	Plugin to monitor mails rejected by exim RBLs.
+#
+# 2015/06/11 v0.1 - Initial Release  - by Francois Dechery , www.440net.net
+#
+# Based on exim_mailstats munin plugin
+# 	Thanks to its original authors : Torstein Svendsen, Henrik Grindal Bakken, Jimmy Olsen, Nicolai Langfeldt and others
+#
+# Usage: 
+#	- copy or link into /etc/munin/plugins/
+#	- Like others Exim plug-ins, add "[exim_rbls]" to munin-node plug-ing config, with "group mail"
+#
+# Enveloppe Parameters:
+#	- env.rbls		(optional) list of RBL sites, separated by space, ie "www.barracudanetworks.com www.spamhaus.org www.spamcop.net"
+#	- env.exim		(optional) path to exim bin
+#	- env.logdir	(optional) path to exim log dir
+#	- env.logname	(optional) exim logfile name
+#
+# Magic markers (optional - used by munin-config and some installation scripts):
+#
+#%# family=auto
+#%# capabilities=autoconf
+#
+
+
+use strict;
+use lib $ENV{'MUNIN_LIBDIR'};
+use Munin::Plugin;
+
+## Variables ######################################
+my @rbls_counts	= undef;
+my @rbls_names	=('www.barracudanetworks.com','www.spamhaus.org','www.spamcop.net');
+
+if (defined $ENV{'rbls'}){
+	@rbls_names=split(/\s+/,$ENV{'rbls'});
+}
+
+my $EXIM = "/usr/sbin/exim";
+$EXIM = "/usr/sbin/exim4" if (-x "/usr/sbin/exim4");    # a Debianism
+$EXIM = $ENV{'exim'}      if defined $ENV{'exim'};
+
+my $LOGDIR  = $ENV{'logdir'}  || undef;
+my $LOGNAME = $ENV{'logname'} || '';
+
+
+################################################
+sub get_exim_logfile {
+    my ($spec, $type, $time) = @_;
+    chomp($spec);
+    $time ||= time();
+    my $logfile = $spec;
+    $logfile =~ s/^log_file_path = //;
+    $logfile =~ s/\%s/$type/;
+
+    if ($logfile =~ /\%D/) {
+        my @t = localtime($time);
+        my $ts = sprintf("%04d%02d%02d", $t[5] + 1900, $t[4] + 1, $t[3]);
+        $logfile =~ s/\%D/$ts/g;
+    }
+    my @lfiles = split(/\s?:\s?/, $logfile);
+    foreach (@lfiles) {
+        return $_ unless /^syslog/;
+    }
+    return;
+}
+
+################################################
+sub parseEximfile {	 
+
+    my ($fname, $start) = @_;
+
+    my ($LOGFILE, $rotated) = tail_open($fname, $start);
+
+    if ($rotated || !defined($rbls_counts[0]) || $rbls_counts[0] eq 'U') {
+        # Reset everything if the log has been rotated or we've just initialised
+		set_all_counters(0);
+    }
+
+    while (my $line =<$LOGFILE>) {
+		chomp ($line);
+		if($line=~/\sis\sin\san\sRBL,/){
+			my $i=0;
+			my $rbl;
+			foreach $rbl (@rbls_names){
+				if($line=~/$rbl/){
+					$rbls_counts[$i]++;
+				}
+				$i++;
+			}
+		}
+    }
+    return tail_close($LOGFILE);
+}
+
+#######################################
+sub set_all_counters($){
+    my ($val) = @_;
+	my $n=0;
+    foreach (@rbls_names){
+		$rbls_counts[$n]=$val;
+		$n++;
+	}
+}
+
+
+## Autoconf ######################################
+my $logfile;
+
+if ($ARGV[0] and $ARGV[0] eq "autoconf" ){
+	if (defined($LOGDIR)) {
+		if (! -d $LOGDIR) {
+			print "no (logdir does not exist)\n";
+			exit 0;
+		}
+        $logfile = $LOGDIR . '/' . ($LOGNAME || 'mainlog');
+	}
+	else {
+		my $logfilespec = `$EXIM -bP log_file_path 2>/dev/null`;
+
+		if ($? == 0) {
+			$logfile = get_exim_logfile($logfilespec, 'main');
+			if (!defined($logfile)) {
+				print "no (not able to parse output of '$EXIM -bP log_file_path' = '$logfilespec')\n";
+				exit 0;
+			}
+		}
+		elsif ($? == 127) {
+			print "no (exim not found)\n";
+            exit 0;
+		}
+        else {
+            print "no ('$EXIM -bP log_file_path' returned an error)\n";
+            exit 0;
+        }
+	}
+
+	if ($logfile) {
+		if (-r "$logfile") {
+			print "yes\n";
+		}
+		else {
+            print "no (logfile '$logfile' not readable)\n";
+		}
+	}
+
+	exit 0;
+}
+
+###################################################
+my $logfilespec;
+
+if (defined($LOGDIR)) {
+    $logfilespec = '';
+    $logfile = $LOGDIR . '/' . ($LOGNAME || 'mainlog');
+}
+else {
+    $logfilespec = `$EXIM -bP log_file_path 2>/dev/null`;
+    $logfile = get_exim_logfile($logfilespec, 'main');
+}
+
+die "Logfile '$logfile' is not readable\n" unless -r $logfile;
+
+
+## Config ######################################
+
+if ( $ARGV[0] and $ARGV[0] eq "config" ) {
+
+	print "graph_title Exim RBLs Usage\n";
+	print "graph_period minute\n";
+	print "graph_args --base 1000 -l 0\n";
+	print "graph_vlabel mails / \${graph_period}\n";
+	print "graph_scale	no\n";
+	print "graph_category Mail\n";
+	
+	my $clean_name;
+	foreach(@rbls_names){
+		$clean_name= clean_fieldname($_);
+		$_=~ s/^www\.//;
+		print $clean_name . ".label ".$_."\n";
+		print $clean_name . ".type DERIVE\n";
+		print $clean_name . ".min 0\n";
+		print $clean_name . ".draw LINE1\n";
+	}
+	exit 0;
+}
+
+
+## MAIN ######################################
+
+my @last_state = restore_state();
+my $pos;
+if (! defined $last_state[0]) {
+    # No state file present.  Avoid startup spike: Do not read log
+    # file up to now, but remember how large it is now, and next
+    # time read from there.
+    $pos = (stat $logfile)[7];  # File size
+    set_all_counters('U');
+}
+else {
+    @rbls_counts=@last_state;
+    shift @rbls_counts;
+    $pos = parseEximfile($logfile, $last_state[0]);
+}
+
+
+
+# print values -------------
+my $n=0;
+my ($clean_name,$value);
+foreach(@rbls_names){
+	$clean_name= clean_fieldname($_);
+	if(! defined($rbls_counts[$n])){
+		$value=0;
+	}
+	else{
+		$value=$rbls_counts[$n];
+	}
+	print $clean_name . ".value ".$value."\n";
+	$n++;
+}
+
+# save ------------
+my @state=@rbls_counts;
+unshift @state, $pos;
+save_state(@state);
