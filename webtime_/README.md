@@ -6,9 +6,9 @@ Plugin to graph HTTP response time of a specific page
 Here is a usefull link that explains [how to setup a virtual node](https://wiki.mikrotik.com/wiki/Munin_Monitoring	).*
 
 ## Installation
-- copy ```webtime_``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
-- then symlink it from the ```/etc/munin/plugins/``` folder, carefully naming it as described below
-- update the ```/etc/munin/munin.conf```adding your node hostname as the name (between brackets), and set the address parameter to the IP of the node where webtime_ is installed. Example, if the node is on the same host as the server :
+- Copy ```webtime_``` to the main Munin plugin directory, ie :```/usr/share/munin/plugins/```
+- Then symlink it from the ```/etc/munin/plugins/``` folder, carefully naming it as described below
+- Update the ```/etc/munin/munin.conf```adding your node hostname as the name (between brackets), and set the address parameter to the IP of the node where webtime_ is installed. Example, if the node is on the same host as the server :
 
 ```
 # hostname fetched by the node (must be the SAME as the name defined in the symlink name)
@@ -18,7 +18,7 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 ````
 
 ## Wilcard Naming
-Link to this file with a symlink named as : ```webtime_HOSTNAME_PAGENAME``` Where 
+Link to this file with a symlink named as ```webtime_HOSTNAME_PAGENAME``` where: 
 - **HOSTNAME** is the HostName to fetch.
 - **PAGENAME** is the name of the page ('-' are replaced by spaces)
 
@@ -26,8 +26,8 @@ example: ```webtime_www.apple.com_HomePage```
 
 ## ENV Settings
 You can add the following "env.xx" inside the ```[iot-json_HOSTNAME_FIRMWARE_TYPE]``` definitions in ```/etc/munin/plugin-conf.d/```
-- **url**			: the relative URL  from the host (defaults to '/')
-- **host**			: use a different hostname than the one defined from the symlink name
-- **name**			: use a different pagename than the one defined from the symlink name
-- **scheme**		: scheme to use (defaults to 'http://')
-- **agent**			: UserAgent (defaults to 'Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) webtime_/1.0')
+- **env.url**    : the relative URL  from the host (defaults to '/')
+- **env.host**   : use a different hostname than the one defined from the symlink name
+- **env.name**   : use a different pagename than the one defined from the symlink name
+- **env.scheme** : scheme to use (defaults to 'http://')
+- **env.agent**  : UserAgent (defaults to 'Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) webtime_/1.0')
