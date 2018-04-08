@@ -1,0 +1,92 @@
+#!/bin/bash
+# -*- bash -*-
+
+: << =cut
+
+=head1 NAME
+
+http-loadtime_ - Plugin to graph HTTP response time of a specific page
+
+=head1 CONFIGURATION
+
+This is a virtual node plugin that should be linked as 
+
+"http-loadtime_HOST_NAME" where
+ - HOST is the host to be fetched   as well as the node host_name
+ - NAME is the name of the Graph (carret are replaced by spaces in the graph)
+
+The following environment variables are used by this plugin
+
+ - url   : URL to add at the end of the hostname (default: "/")
+ - name  : an alternate Name if the $NAME in the symlink can not be escaped corretly (ie if you need  slashes) 
+ - scheme: (default: "http://")
+ - agent: The user agent to use (default: "Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) http-loadtime_/1.0")
+
+=head1 AUTHOR
+
+http://github.com/soif
+
+=head1 LICENSE
+
+GPL3.0
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+
+##########################################################################################
+HOST_PLUS_NAME=${0##*/webtime_}
+L_NAME=${HOST_PLUS_NAME##*_}
+L_HOST=${HOST_PLUS_NAME%%_*}
+
+URL=${url:-"/"}
+NAME=${name:-"$L_NAME"}
+HOST=${host:-"$L_HOST"}
+SCHEME=${scheme:-"http://"}
+AGENT=${agent:-"Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) http-loadtime_/1.0"}
+
+FULL_URL="$SCHEME$HOST$URL"
+NAME=${NAME//-/ } ## bug if sh (dash)
+
+
+time_bin=$(which time)
+wget_bin=$(which wget)
+
+if [ "$1" = "autoconf" ]; then
+    result="yes"
+    [ "x$time_bin" = "x" ] && result=1
+    [ "x$wget_bin" = "x" ] && result=2
+    if [ "$result" != "yes" ]; then
+	echo "no (need time and wget programs)"
+	exit 0
+    fi
+    echo yes
+    exit 0
+fi
+
+if [ "$1" = "config" ]; then
+    echo "host_name $L_HOST"
+    echo "graph_title $NAME"
+    echo "graph_args --base 1000 -l 0"
+    echo "graph_vlabel Load time in seconds"
+    echo "graph_category web"
+    echo "graph_info This graph shows load time in seconds for $FULL_URL"
+    echo "loadtime.label loadtime"
+    echo "loadtime.info Load time"
+    exit 0
+fi
+
+TMPDIR=`mktemp -d` || exit 1
+
+trap "rm -rf $TMPDIR" EXIT
+
+cd $TMPDIR || exit 1
+loadtime=$($time_bin -p $wget_bin -pH -T 20  --no-cache --no-proxy --delete-after -U "User-Agent: $AGENT" $FULL_URL -q 2>&1 | awk '/^real / { print $2 }')
+
+cd ..
+
+echo "loadtime.value $loadtime"
