@@ -26,8 +26,8 @@ example: ```webtime_www.apple.com_HomePage```
 
 ## ENV Settings
 You can add the following "env.xx" inside the ```[iot-json_HOSTNAME_FIRMWARE_TYPE]``` definitions in ```/etc/munin/plugin-conf.d/```
-- **url**			: the relative URL  from the host (default to '/')
+- **url**			: the relative URL  from the host (defaults to '/')
 - **host**			: use a different hostname than the one defined from the symlink name
 - **name**			: use a different pagename than the one defined from the symlink name
-- **scheme**		: scheme to use (default to 'http://')
-- **agent**			: UserAgent (default to 'Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) http-loadtime_/1.0')
+- **scheme**		: scheme to use (defaults to 'http://')
+- **agent**			: UserAgent (defaults to 'Mozilla/5.0 (Linux; Munin; http://www.github/soif/munin_plugins) webtime_/1.0')
