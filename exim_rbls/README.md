@@ -1,6 +1,6 @@
 # exim_rbls
 
-Graph count of emails rejected by each RBLs configured in Exim.
+This Munin Plugin graphs the count of emails rejected by each RBLs configured in Exim.
 
 *(The included Perl shebang is directly compatible with latest Centos-Cpanel versions )*
 
