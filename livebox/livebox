@@ -1,0 +1,339 @@
+#!/usr/bin/perl
+
+###########################################################
+### Copyright Francois Dechery, https://github.com/soif ###
+###########################################################
+
+use strict;
+use LWP::UserAgent;
+use HTTP::Cookies;
+use File::Basename;
+use File::stat;
+
+### HELP #################################################################################
+=begin help
+$presets{'levels_down'}{'graph_title'}			="Line Levels - DownStream";
+$presets{'levels_up'}{'graph_category'}			="adsl";
+$presets{'errors_fec'}{'graph_title'}			="Errors - FEC";
+$presets{'errors_hec'}{'graph_title'}			="Errors - HEC";
+$presets{'errors_crc'}{'graph_title'}			="Errors - CRC ";
+$presets{'errors_err'}{'graph_title'}			="Errors - Errored ";
+$presets{'traffic'}{'graph_title'}				="Traffic";
+
+	--- WILDCARD NAMING -------------
+	Link to this file with a symlink named as : livebox_PRESET
+	PRESET is one of the following presets:
+		- rate_up		: Upstream Rate
+		- rate_down		: Downstream Rate
+		- errors_fec	: FEC Errors
+		- errors_hec	: HEC Errors
+		- errors_crc	: CRC Errors
+		- errors_err	: "Errored" Errors
+		- traffic		: Up/Down Traffic
+		- levels_down	: DownStream Line Levels
+		- levels_up 	: UpStream Line Levels
+
+	You can also use KEY_TYPE.KEY_NAME instead of PRESET
+	ie: if you want to extract a JSON field named "Uptime", from the 'mib' JSON object, use "mib.Uptime"
+
+	--- ENV SETTINGS -------------
+	You must add the following "env.xx" inside the [livebox_*] definitions in /etc/munin/plugins.d/*.conf
+		- env.pass		: (required)  the admin password
+		- env.host		: (optionnal) IP or hostname of the livebox (default to 192.168.1.1)
+		- env.fqdn		: (optionnal) the hostname used by munin in the html page (default to the 'host' value)
+
+=cut
+
+
+## From ENV ##############################################################################
+my $livebox_host	= $ENV{'host'}	|| "192.168.1.1";
+my $livebox_pass	= $ENV{'pass'}	|| "EnterYourAdminPassword";
+my $livebox_fqdn	= $ENV{'fqdn'}	|| $livebox_host;
+
+my $livebox_url		=	'http://'.$livebox_host.'/ws';
+
+#### parse filename ######################################################################
+my $script_name = basename($0);
+my ($base_name, $key)=split(/_/, $script_name,2);
+my ($key_type, $key_name)=split(/\./, $key,2);
+
+my $dir_tmp			='/tmp';
+my $file_cookie		=	$dir_tmp . "/munin_${base_name}_cookie.txt"; 
+
+my $contextID='';
+my $ua = LWP::UserAgent->new( 
+	agent => 'Mozilla',		#	agent => 'Mozilla/4.73 [en] (X11; I; Linux 2.2.16 i686; Nav)',
+	cookie_jar => HTTP::Cookies->new( file => $file_cookie, autosave => 1, ignore_discard => 1 ),
+);
+
+# FUNCTIONS ##############################################################################
+
+# -----------------------------------------
+sub trim { 
+	my $s = shift; 
+	$s =~ s/^\s+|\s+$//g; 
+	return $s ;
+}
+# -----------------------------------------
+sub extractJsonField{
+	my $json 	= shift;
+	my $param = shift;
+
+	if($json ne ""){
+		my $re='"'. $param.'":"?(.*?)[",}\n]+';
+		#print "$re : \n";
+		if ($json =~ m/$re/ ){
+			return trim($1);
+		}
+	}
+	return "";
+}
+# -----------------------------------------
+sub httpGetAuthContextID {
+	my $data="{\"service\":\"sah.Device.Information\",\"method\":\"createContext\",\"parameters\":{\"applicationName\":\"so_sdkut\",\"username\":\"admin\",\"password\":\"$livebox_pass\"}}";
+	my $res	=	$ua->post($livebox_url, 'Authorization'=> 'X-Sah-Login', Content => $data);
+	my $json = $res->content;
+	return extractJsonField($json,'contextID');
+}
+# -----------------------------------------
+sub httpGetJSON{
+	my $type		= shift;
+	$type or $type='voip';
+	my %data=(
+		dsl		=> '{"service":"NeMo.Intf.dsl0","method":"getDSLStats","parameters":{}}',
+		mib 	=> '{"service":"NeMo.Intf.data","method":"getMIBs","parameters":{}}',
+		voip	=> '{"service":"VoiceService.VoiceApplication","method":"listTrunks","parameters":{}}',
+		tv		=> '{"service":"NMC.OrangeTV","method":"getIPTVStatus","parameters":{}}',
+		wan		=> '{"service":"NMC","method":"getWANStatus","parameters":{}}'
+	);
+	if($contextID eq ""){
+		$contextID = httpGetAuthContextID;
+	}
+	my $res	=	$ua->post($livebox_url, 'Content-Type' => 'application/x-sah-ws-4-call+json', 'X-Context' => $contextID, Content => $data{$type});
+	my $json = $res->content; 
+	return $json;
+}
+# -----------------------------------------
+sub httpGetJSONCached{
+	my $type		= shift;
+
+	my $file="/tmp/munin_${base_name}_cache_${type}.json";
+	my $max_age = 60 * 4;	#4 min
+
+	# deleted cache file if too old ---------
+	if(-e $file){
+		my $filetime=(stat($file))->mtime;
+		my $offset = time - $filetime;
+		if( $offset  > $max_age ) {
+			unlink $file;
+  		}
+	}
+	# get json from cache or url -------------
+	my $json='';
+	if(-e $file){
+		open FILE, $file or die "Couldn't open file '$file' : $!";
+		$json = join("", <FILE>);
+		close FILE;
+  	}
+	else{
+		$json = httpGetJSON($type);
+		if($json ne ""){
+			open(my $fh, '>', $file) or die "Could not open file '$file' $!";
+			print $fh $json;
+			close $fh;
+		}
+	}
+	return $json;
+}
+
+# presets ################################################################################
+my %presets;
+
+$presets{'rate_up'}{'graph_title'}				="Rate - UpStream";
+$presets{'rate_up'}{'graph_vlabel'}				="Kbs";
+$presets{'rate_up'}{'graph_category'}			="network";
+$presets{'rate_up'}{'graph_args'}				="--base 1024";
+$presets{'rate_up'}{'datas'}{'v1'}{'label'}		="Max";
+$presets{'rate_up'}{'datas'}{'v1'}{'key'}		="mib.UpstreamMaxRate";
+$presets{'rate_up'}{'datas'}{'v2'}{'label'}		="Current";
+$presets{'rate_up'}{'datas'}{'v2'}{'key'}		="mib.UpstreamCurrRate";
+$presets{'rate_up'}{'datas'}{'v1'}{'cdef'}		="v1,1024,*";
+$presets{'rate_up'}{'datas'}{'v2'}{'cdef'}		="v2,1024,*";
+
+$presets{'rate_down'}{'graph_title'}			="Rate - DownStream ";
+$presets{'rate_down'}{'graph_vlabel'}			="Kbs";
+$presets{'rate_down'}{'graph_category'}			="network";
+$presets{'rate_down'}{'graph_args'}				="--base 1024";
+$presets{'rate_down'}{'datas'}{'v1'}{'label'}	="Max";
+$presets{'rate_down'}{'datas'}{'v1'}{'key'}		="mib.DownstreamMaxRate";
+$presets{'rate_down'}{'datas'}{'v2'}{'label'}	="Current";
+$presets{'rate_down'}{'datas'}{'v2'}{'key'}		="mib.DownstreamCurrRate";
+$presets{'rate_down'}{'datas'}{'v1'}{'cdef'}	="v1,1024,*";
+$presets{'rate_down'}{'datas'}{'v2'}{'cdef'}	="v2,1024,*";
+
+$presets{'levels_down'}{'graph_title'}			="Line Levels - DownStream";
+$presets{'levels_down'}{'graph_category'}		="adsl";
+$presets{'levels_down'}{'graph_args'}			="--base 1000";
+$presets{'levels_down'}{'graph_order'}			="v1 v2 v3 v4";
+$presets{'levels_down'}{'datas'}{'v1'}{'label'}	="Power";
+$presets{'levels_down'}{'datas'}{'v1'}{'key'}	="mib.DownstreamPower";
+$presets{'levels_down'}{'datas'}{'v2'}{'label'}	="Noise Margin";
+$presets{'levels_down'}{'datas'}{'v2'}{'key'}	="mib.DownstreamNoiseMargin";
+$presets{'levels_down'}{'datas'}{'v3'}{'label'}	="Attenuation";
+$presets{'levels_down'}{'datas'}{'v3'}{'key'}	="mib.DownstreamAttenuation";
+$presets{'levels_down'}{'datas'}{'v4'}{'label'}	="Line Attenuation";
+$presets{'levels_down'}{'datas'}{'v4'}{'key'}	="mib.DownstreamLineAttenuation";
+
+$presets{'levels_up'}{'graph_title'}			="Line Levels - UpStream ";
+$presets{'levels_up'}{'graph_category'}			="adsl";
+$presets{'levels_up'}{'graph_args'}				="--base 1000";
+$presets{'levels_up'}{'graph_order'}			="v1 v2 v3 v4";
+$presets{'levels_up'}{'datas'}{'v1'}{'label'}	="Power";
+$presets{'levels_up'}{'datas'}{'v1'}{'key'}		="mib.UpstreamPower";
+$presets{'levels_up'}{'datas'}{'v2'}{'label'}	="Noise Margin";
+$presets{'levels_up'}{'datas'}{'v2'}{'key'}		="mib.UpstreamNoiseMargin";
+$presets{'levels_up'}{'datas'}{'v3'}{'label'}	="Attenuation";
+$presets{'levels_up'}{'datas'}{'v3'}{'key'}		="mib.UpstreamAttenuation";
+$presets{'levels_up'}{'datas'}{'v4'}{'label'}	="Line Attenuation";
+$presets{'levels_up'}{'datas'}{'v4'}{'key'}		="mib.UpstreamLineAttenuation";
+
+$presets{'errors_fec'}{'graph_title'}			="Errors - FEC";
+$presets{'errors_fec'}{'graph_category'}		="adsl";
+$presets{'errors_fec'}{'graph_order'}			="v1 v2";
+$presets{'errors_fec'}{'graph_args'}			="--base 1000";
+$presets{'errors_fec'}{'datas'}{'v1'}{'label'}	="FEC";
+$presets{'errors_fec'}{'datas'}{'v1'}{'key'}	="dsl.FECErrors";
+$presets{'errors_fec'}{'datas'}{'v2'}{'label'}	="ATU-C FEC";
+$presets{'errors_fec'}{'datas'}{'v2'}{'key'}	="dsl.ATUCFECErrors";
+$presets{'errors_fec'}{'datas'}{'v1'}{'type'}	="DERIVE";
+$presets{'errors_fec'}{'datas'}{'v1'}{'min'}	="0";
+$presets{'errors_fec'}{'datas'}{'v2'}{'type'}	="DERIVE";
+$presets{'errors_fec'}{'datas'}{'v2'}{'min'}	="0";
+
+$presets{'errors_hec'}{'graph_title'}			="Errors - HEC";
+$presets{'errors_hec'}{'graph_category'}		="adsl";
+$presets{'errors_hec'}{'graph_order'}			="v1 v2";
+$presets{'errors_hec'}{'graph_args'}			="--base 1000";
+$presets{'errors_hec'}{'datas'}{'v1'}{'label'}	="HEC";
+$presets{'errors_hec'}{'datas'}{'v1'}{'key'}	="dsl.HECErrors";
+$presets{'errors_hec'}{'datas'}{'v2'}{'label'}	="ATU-C HEC";
+$presets{'errors_hec'}{'datas'}{'v2'}{'key'}	="dsl.ATUCHECErrors";
+$presets{'errors_hec'}{'datas'}{'v1'}{'type'}	="DERIVE";
+$presets{'errors_hec'}{'datas'}{'v1'}{'min'}	="0";
+$presets{'errors_hec'}{'datas'}{'v2'}{'type'}	="DERIVE";
+$presets{'errors_hec'}{'datas'}{'v2'}{'min'}	="0";
+
+$presets{'errors_crc'}{'graph_title'}			="Errors - CRC ";
+$presets{'errors_crc'}{'graph_category'}		="adsl";
+$presets{'errors_crc'}{'graph_order'}			="v1 v2";
+$presets{'errors_crc'}{'graph_args'}			="--base 1000";
+$presets{'errors_crc'}{'datas'}{'v1'}{'label'}	="CRC";
+$presets{'errors_crc'}{'datas'}{'v1'}{'key'}	="dsl.CRCErrors";
+$presets{'errors_crc'}{'datas'}{'v2'}{'label'}	="ATU-C CRC";
+$presets{'errors_crc'}{'datas'}{'v2'}{'key'}	="dsl.ATUCCRCErrors";
+$presets{'errors_crc'}{'datas'}{'v1'}{'type'}	="DERIVE";
+$presets{'errors_crc'}{'datas'}{'v1'}{'min'}	="0";
+$presets{'errors_crc'}{'datas'}{'v2'}{'type'}	="DERIVE";
+$presets{'errors_crc'}{'datas'}{'v2'}{'min'}	="0";
+
+$presets{'errors_err'}{'graph_title'}			="Errors - Errored ";
+$presets{'errors_err'}{'graph_category'}		="adsl";
+$presets{'errors_err'}{'graph_order'}			="v1 v2";
+$presets{'errors_err'}{'graph_args'}			="--base 1000";
+$presets{'errors_err'}{'datas'}{'v1'}{'label'}	="Errored";
+$presets{'errors_err'}{'datas'}{'v1'}{'key'}	="dsl.ErroredSecs";
+$presets{'errors_err'}{'datas'}{'v2'}{'label'}	="Severely Errored";
+$presets{'errors_err'}{'datas'}{'v2'}{'key'}	="dsl.SeverelyErroredSecs";
+$presets{'errors_err'}{'datas'}{'v1'}{'type'}	="DERIVE";
+$presets{'errors_err'}{'datas'}{'v1'}{'min'}	="0";
+$presets{'errors_err'}{'datas'}{'v2'}{'type'}	="DERIVE";
+$presets{'errors_err'}{'datas'}{'v2'}{'min'}	="0";
+
+$presets{'traffic'}{'graph_title'}				="Traffic";
+$presets{'traffic'}{'graph_order'}				="down up";
+$presets{'traffic'}{'graph_category'}			="network";
+$presets{'traffic'}{'graph_args'}				="--base 1000";
+$presets{'traffic'}{'datas'}{'down'}{'label'}	="Received";
+$presets{'traffic'}{'datas'}{'down'}{'key'}		="dsl.ReceiveBlocks";
+$presets{'traffic'}{'datas'}{'down'}{'type'}	="DERIVE";
+$presets{'traffic'}{'datas'}{'down'}{'min'}		="0";
+$presets{'traffic'}{'datas'}{'down'}{'graph'}	="no";
+#$presets{'traffic'}{'datas'}{'down'}{'cdef'}	="down,8,*";
+$presets{'traffic'}{'datas'}{'up'}{'label'}		="Sent";
+$presets{'traffic'}{'datas'}{'up'}{'key'}		="dsl.TransmitBlocks";
+$presets{'traffic'}{'datas'}{'up'}{'type'}		="DERIVE";
+$presets{'traffic'}{'datas'}{'up'}{'min'}		="0";
+#$presets{'traffic'}{'datas'}{'up'}{'cdef'}		="up,8,*";
+$presets{'traffic'}{'datas'}{'up'}{'negative'}	="down";
+
+
+$presets{'default'}{'graph_title'}			=$key_name;
+$presets{'default'}{'graph_category'}		="raw";
+
+##########################################################################################
+# MAIN ###################################################################################
+##########################################################################################
+my %selected_preset;
+
+if ($key_name eq "" ){
+	%selected_preset = %{$presets{$key_type}};
+}
+else{
+	%selected_preset = %{$presets{'default'}};
+	$selected_preset{'datas'}{'v1'}{'label'}	=ucfirst($key_name);
+	$selected_preset{'datas'}{'v1'}{'key'}		=$key;
+}
+my %datas =%{$selected_preset{'datas'}};
+
+#use Data::Dumper; print Dumper(%selected_preset);
+
+### ARG = autoconf #######################################################################
+if ( defined $ARGV[0] && $ARGV[0] eq 'autoconf' ) {
+	print "yes\n";
+	exit 0;
+}
+
+### ARG = config #########################################################################
+if ( defined $ARGV[0] && $ARGV[0] eq 'config' ) {
+	print "host_name $livebox_fqdn\n";
+	foreach my $k (keys %selected_preset) {
+		if ($k ne 'datas'){
+			print "$k $selected_preset{$k}\n";
+		}
+	}
+	foreach my $k (keys %datas) {
+		foreach my $p (keys %{ $datas{$k} } ) {		
+			if ($p ne 'key'){
+				print "$k.$p $datas{$k}{$p}\n";
+			}
+		}
+	}
+	exit 0;
+}
+
+### Main (Show Value) #####################################################################
+foreach my $k (keys %datas) {
+	my ($k_type, $k_name)=split(/\./, $datas{$k}{'key'});
+	print "$k.value ".extractJsonField(httpGetJSONCached($k_type),$k_name) . "\n";
+}
+exit 0;
+
+
+
+
+
+
+=begin comment
+	print "\n--------------------------------\n";
+	print httpGetJSONCached('dsl');
+	print "\n--------------------------------\n";
+	print httpGetJSONCached('mib');
+	print "\n--------------------------------\n";
+	print httpGetJSONCached('voip');
+	print "\n--------------------------------\n";
+	print httpGetJSONCached('tv');
+	print "\n--------------------------------\n";
+	print httpGetJSONCached('wan');
+	print "\n--------------------------------\n";
+=end comment
+=cut
