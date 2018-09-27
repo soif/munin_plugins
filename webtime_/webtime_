@@ -1,6 +1,10 @@
 #!/bin/bash
 # -*- bash -*-
 
+###########################################################
+### Copyright Francois Dechery, https://github.com/soif ###
+###########################################################
+
 : << =cut
 
 =head1 NAME
@@ -24,7 +28,7 @@ The following environment variables are used by this plugin
 
 =head1 AUTHOR
 
-http://github.com/soif
+https://github.com/soif
 Mostly inspired by the builtin http_loadtime Munin plugin 
 
 =head1 LICENSE
