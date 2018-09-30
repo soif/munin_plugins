@@ -7,6 +7,7 @@ Various plugins for [Munin](http://munin-monitoring.org/)
 - **[fail2ban](fail2ban/)** : Latest version of the fail2ban plugin to monitor Fail2ban jails
 - **[iot-json_](iot-json_/)** : Virtual _Wildcard_ Plugin to graph data from common ESP8266 Firmwares (ESPEasy, Espurna ...)
 - **[oscam](oscam/)** : various plugins to graph information from an Oscam server
+- **[livebox_](livebox_/)** : Virtual _Wildcard_ Plugin to graph data for the ADSL/VDSL modem from french ISP Orange.
 - **[webtime_](webtime_/)** : Virtual _Wildcard_ Plugin to graph HTTP response time of a specific page
 
 
