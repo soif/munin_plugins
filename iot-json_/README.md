@@ -1,4 +1,4 @@
-# iot-json_
+# IOT JSON Munin Plugin
 
 Parse JSON information fron popular ESP8266 IT firmware like [**ESPeasy**](https://github.com/letscontrolit/ESPEasy/) or  [**Espurna**](https://github.com/xoseperez/espurna)
 

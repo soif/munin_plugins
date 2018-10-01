@@ -1,4 +1,4 @@
-# fail2ban
+# Fail2ban Munin Plugin
 
 Latest version of the fail2ban plugin to monitor bans on Fail2ban jails
 

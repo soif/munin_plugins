@@ -1,4 +1,4 @@
-# exim_rbls
+# Exim RBLs Munin Plugin
 
 This Munin Plugin graphs the count of emails rejected by each RBLs configured in Exim.
 

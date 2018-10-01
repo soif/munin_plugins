@@ -1,4 +1,4 @@
-# Oscam Plugins
+# Oscam Munin Plugins
 
 Some plugins to graph many information from an Oscam server
 

@@ -1,4 +1,4 @@
-# livebox_
+# Livebox Munin Plugin
 
 Parse JSON information fron Orange/Sosh Livebox ADSL Modem (works with latest firmwares & V4 hardware)
 

@@ -1,4 +1,4 @@
-# webtime_
+# Webtime Munin Plugin
 
 Plugin to graph HTTP response time of a specific page
 
