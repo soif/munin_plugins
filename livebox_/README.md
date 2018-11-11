@@ -12,7 +12,7 @@ Here is a usefull link that explains [how to setup a virtual node](https://wiki.
 
 Example, if the node is on the same host as the server :
 ```
-# address or name of the ESP device (must be the same as the host defined in the ENV)
+# address or name of the Livebox (must be the same as the host defined in the ENV)
 [192.168.1.1]
       address 127.0.0.1
       # this the address of the NODE containing the symlink to livebox_
