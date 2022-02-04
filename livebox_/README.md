@@ -38,6 +38,7 @@ You can also use **KEY_TYPE.KEY_NAME** instead of *PRESET*.
 
 ### ENV Settings
 You must add the following "env.xx" inside the [livebox_*] definitions in /etc/munin/plugins.d/*.conf
-		- env.pass		: (required)  the admin password
-		- env.host		: (optionnal) IP or hostname of the livebox (default to 192.168.1.1)
-		- env.fqdn		: (optionnal) the hostname used by munin in the html page (default to the 'host' value)
+
+- **env.pass**		: (required)  the admin password
+- **env.host**		: (optionnal) IP or hostname of the livebox (default to 192.168.1.1)
+- **env.fqdn**		: (optionnal) the hostname used by munin in the html page (default to the 'host' value)
