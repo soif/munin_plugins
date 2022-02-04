@@ -20,15 +20,16 @@ Example, if the node is on the same host as the server :
 
 ### Wilcard Naming
 Link to this file with a symlink named as : ```livebox_PRESET``` where **PRESET** is the one of the followings:
-		- **rate_up**		: Upstream Rate
-		- **rate_down**		: Downstream Rate
-		- **errors_fec**	: FEC Errors
-		- **errors_hec**	: HEC Errors
-		- **errors_crc**	: CRC Errors
-		- **errors_err**	: "Errored" Errors
-		- **traffic**		: Up/Down Traffic
-		- **levels_down**	: DownStream Line Levels
-		- **levels_up** 	: UpStream Line Levels
+
+- **rate_up**		: Upstream Rate
+- **rate_down**		: Downstream Rate
+- **errors_fec**	: FEC Errors
+- **errors_hec**	: HEC Errors
+- **errors_crc**	: CRC Errors
+- **errors_err**	: "Errored" Errors
+- **traffic**		: Up/Down Traffic
+- **levels_down**	: DownStream Line Levels
+- **levels_up** 	: UpStream Line Levels
 
 example: ```livebox_rate_down```
 
